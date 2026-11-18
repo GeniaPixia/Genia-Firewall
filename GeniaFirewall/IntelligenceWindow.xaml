@@ -37,7 +37,7 @@
                   EnableRowVirtualization="True" EnableColumnVirtualization="True"
                   GridLinesVisibility="Horizontal" BorderBrush="#DAD8E2"
                   Background="White" RowBackground="White" AlternatingRowBackground="#F8F8FA"
-                  ItemsSource="{Binding Rows}" SelectionMode="Single">
+                  SelectionMode="Single">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Процесс" Binding="{Binding ProcessName}" Width="1.6*"/>
                 <DataGridTextColumn Header="PID" Binding="{Binding Pid}" Width="65"/>

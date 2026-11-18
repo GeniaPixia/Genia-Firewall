@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.Windows;
 using GeniaFirewall.Intelligence;
 using GeniaFirewall.Models;
@@ -15,12 +14,9 @@ public partial class IntelligenceWindow : Window
     private readonly bool _ru = LocalizationService.EffectiveLanguage == UiLanguage.Russian;
     private bool _refreshing;
 
-    public ObservableCollection<InsightRow> Rows { get; } = [];
-
     public IntelligenceWindow()
     {
         InitializeComponent();
-        DataContext = this;
         if (!_ru)
         {
             SubtitleText.Text = "Read-only snapshot · firewall rules are never modified";
@@ -50,17 +46,17 @@ public partial class IntelligenceWindow : Window
         {
             var snapshot = await Task.Run(_collector.Collect);
             if (!IsLoaded) return;
-            Rows.Clear();
-            foreach (var r in snapshot.Connections)
-                Rows.Add(new InsightRow(r, _ru));
+            // One ItemsSource change avoids thousands of UI-thread collection notifications.
+            var visible = snapshot.Connections.Select(r => new InsightRow(r, _ru)).ToArray();
+            ObservationsGrid.ItemsSource = visible;
 
             var external = snapshot.Connections.Count(c => c.Scope == ObservationScope.ExternalCandidate);
             var loopback = snapshot.Connections.Count(c => c.Scope == ObservationScope.Loopback);
             var privateCount = snapshot.Connections.Count(c => c.Scope == ObservationScope.PrivateOrLan);
             var udp = snapshot.Connections.Count(c => c.Scope == ObservationScope.LocalUdpSocket);
             var summary = _ru
-                ? $"Строк: {Rows.Count} · внешние TCP*: {external} · loopback: {loopback} · LAN: {privateCount} · UDP-сокеты: {udp}"
-                : $"Rows: {Rows.Count} · external TCP*: {external} · loopback: {loopback} · LAN: {privateCount} · UDP sockets: {udp}";
+                ? $"Строк: {visible.Length} · внешние TCP*: {external} · loopback: {loopback} · LAN: {privateCount} · UDP-сокеты: {udp}"
+                : $"Rows: {visible.Length} · external TCP*: {external} · loopback: {loopback} · LAN: {privateCount} · UDP sockets: {udp}";
             if (!snapshot.Complete)
                 summary += (_ru ? " · частичный снимок: " : " · partial snapshot: ") +
                            string.Join("; ", snapshot.Issues);

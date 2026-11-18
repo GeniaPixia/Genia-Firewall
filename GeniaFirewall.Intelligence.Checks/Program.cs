@@ -34,3 +34,15 @@ if (EndpointScope.ClassifyTcpRemote(null) != ObservationScope.Unknown)
     throw new InvalidOperationException("Null address was not rejected.");
 Console.WriteLine($"GENIAFIREWALL_INTELLIGENCE_SCOPE_TESTS=PASS_{cases.Length + 1}");
 Console.WriteLine("NO_FIREWALL_WRITES_OR_EXTERNAL_CONNECTIONS=TRUE");
+
+if (OperatingSystem.IsWindows())
+{
+    // This is an actual, on-demand owner-table query on the Windows CI runner.
+    // It never sends packets or alters system firewall policy.
+    var snapshot = new NetworkInsightCollector().Collect();
+    if (snapshot.Connections.Count > 2000 || snapshot.Connections.Any(r =>
+        r.Pid <= 0 || string.IsNullOrWhiteSpace(r.Protocol) ||
+        r.Scope == ObservationScope.LocalUdpSocket && r.RemoteEndpoint != "—"))
+        throw new InvalidOperationException("Invalid or unbounded owner-table snapshot.");
+    Console.WriteLine($"NATIVE_SNAPSHOT_READONLY=PASS rows={snapshot.Connections.Count} complete={snapshot.Complete} issues={snapshot.Issues.Count}");
+}
