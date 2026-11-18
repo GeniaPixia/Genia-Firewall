@@ -77,7 +77,7 @@ public sealed class NetworkInsightCollector
     }
 
     private static string FormatEndpoint(string ip, int port) =>
-        ip.Contains(':', StringComparison.Ordinal) ? $"[{ip}]:{port}" : $"{ip}:{port}";
+        ip.Contains(':') ? $"[{ip}]:{port}" : $"{ip}:{port}";
 
     private static void ReadTable(
         bool tcp, bool ipv6, List<RawConnection> sink, List<string> issues)

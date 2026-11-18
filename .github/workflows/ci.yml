@@ -26,3 +26,6 @@ jobs:
 
       - name: Build
         run: dotnet build GeniaFirewall.sln --configuration Release --no-restore -p:ContinuousIntegrationBuild=true
+
+      - name: Intelligence scope regression tests (no firewall writes)
+        run: dotnet run --project GeniaFirewall.Intelligence.Checks/GeniaFirewall.Intelligence.Checks.csproj --configuration Release --no-build
