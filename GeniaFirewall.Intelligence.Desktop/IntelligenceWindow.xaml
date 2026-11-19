@@ -8,6 +8,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="68" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="32" />
         </Grid.RowDefinitions>
@@ -31,7 +32,34 @@
                        TextWrapping="Wrap"
                        Text="Нажмите «Обновить» для разового снимка. Внешний адрес не доказывает телеметрию; локальный прокси может скрывать конечное назначение. UDP показывает только локальный сокет."/>
         </Border>
-        <DataGrid x:Name="ObservationsGrid" Grid.Row="2" Margin="12,0,12,10"
+        <!-- UI-only filters, applied to the already captured in-memory snapshot. -->
+        <Grid Grid.Row="2" Margin="12,0,12,9">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="190" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="FilterLabel" Text="Показывать" FontSize="11" Margin="1,0,8,0" VerticalAlignment="Center"/>
+            <ComboBox x:Name="ScopeFilterComboBox" Grid.Column="1" Height="28" FontSize="11"
+                      SelectionChanged="ScopeFilter_SelectionChanged" SelectedIndex="0">
+                <ComboBoxItem Content="Все соединения" Tag="All"/>
+                <ComboBoxItem Content="Внешний TCP" Tag="ExternalTcp"/>
+                <ComboBoxItem Content="Loopback" Tag="Loopback"/>
+                <ComboBoxItem Content="LAN (TCP)" Tag="LanTcp"/>
+                <ComboBoxItem Content="Слушающие TCP" Tag="Listeners"/>
+                <ComboBoxItem Content="UDP-сокеты" Tag="UdpSockets"/>
+                <ComboBoxItem Content="Не определено" Tag="Unknown"/>
+            </ComboBox>
+            <TextBlock x:Name="SearchLabel" Grid.Column="3" Text="Поиск" FontSize="11"
+                       Margin="0,0,8,0" VerticalAlignment="Center" />
+            <TextBox x:Name="SearchTextBox" Grid.Column="4" Height="28" FontSize="11"
+                     VerticalContentAlignment="Center" Padding="7,0"
+                     TextChanged="SearchText_Changed"
+                     ToolTip="Поиск по имени процесса, PID, пути и адресу" />
+        </Grid>
+        <DataGrid x:Name="ObservationsGrid" Grid.Row="3" Margin="12,0,12,10"
                   AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
                   CanUserDeleteRows="False" HeadersVisibility="Column"
                   EnableRowVirtualization="True" EnableColumnVirtualization="True"
@@ -39,7 +67,13 @@
                   Background="White" RowBackground="White" AlternatingRowBackground="#F8F8FA"
                   SelectionMode="Single">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Процесс" Binding="{Binding ProcessName}" Width="1.6*"/>
+                <DataGridTextColumn Header="Процесс" Binding="{Binding ProcessName}" Width="1.6*">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="ToolTip" Value="{Binding ExecutablePath}"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
                 <DataGridTextColumn Header="PID" Binding="{Binding Pid}" Width="65"/>
                 <DataGridTextColumn Header="Протокол" Binding="{Binding Protocol}" Width="80"/>
                 <DataGridTextColumn Header="Область" Binding="{Binding ScopeDisplay}" Width="1.2*"/>
@@ -48,7 +82,7 @@
                 <DataGridTextColumn Header="Состояние" Binding="{Binding State}" Width="100"/>
             </DataGrid.Columns>
         </DataGrid>
-        <Border Grid.Row="3" Background="#F0EFF5" BorderBrush="#DAD8E2" BorderThickness="0,1,0,0">
+        <Border Grid.Row="4" Background="#F0EFF5" BorderBrush="#DAD8E2" BorderThickness="0,1,0,0">
             <TextBlock x:Name="ResultText" Margin="13,0" VerticalAlignment="Center" FontSize="10.5"
                        Foreground="#5C5969" Text="Сбор выключен. Нажмите «Обновить»."/>
         </Border>

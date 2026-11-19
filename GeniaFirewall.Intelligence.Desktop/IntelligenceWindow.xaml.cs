@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using GeniaFirewall.Intelligence;
 
 namespace GeniaFirewall.Intelligence.Desktop;
@@ -11,6 +12,7 @@ public partial class IntelligenceWindow : Window
     private readonly NetworkInsightCollector _collector = new();
     private readonly bool _ru;
     private bool _refreshing;
+    private NetworkInsightSnapshot? _lastSnapshot;
 
     public IntelligenceWindow(bool russian)
     {
@@ -23,6 +25,13 @@ public partial class IntelligenceWindow : Window
                 "Local proxy hops can hide the final destination; UDP tables show local sockets only.";
             RefreshButton.Content = "Refresh";
             CloseButton.Content = "Close";
+            FilterLabel.Text = "Show";
+            SearchLabel.Text = "Search";
+            SearchTextBox.ToolTip = "Find by process name, PID, path or endpoint";
+            var labels = new[] { "All connections", "External TCP", "Loopback", "LAN (TCP)", "TCP listeners", "UDP sockets", "Unknown" };
+            for (var i = 0; i < labels.Length; i++)
+                if (ScopeFilterComboBox.Items[i] is ComboBoxItem item)
+                    item.Content = labels[i];
             ResultText.Text = "Not collecting. Click Refresh to observe once.";
             var columns = ObservationsGrid.Columns;
             columns[0].Header = "Process";
@@ -45,23 +54,9 @@ public partial class IntelligenceWindow : Window
         {
             var snapshot = await Task.Run(_collector.Collect);
             if (!IsLoaded) return;
-            // One ItemsSource change avoids thousands of UI-thread collection notifications.
-            var visible = snapshot.Connections.Select(r => new InsightRow(r, _ru)).ToArray();
-            ObservationsGrid.ItemsSource = visible;
+            _lastSnapshot = snapshot;
+            ApplyFilter();
 
-            var external = snapshot.Connections.Count(c => c.Scope == ObservationScope.ExternalCandidate);
-            var loopback = snapshot.Connections.Count(c => c.Scope == ObservationScope.Loopback);
-            var privateCount = snapshot.Connections.Count(c => c.Scope == ObservationScope.PrivateOrLan);
-            var udp = snapshot.Connections.Count(c => c.Scope == ObservationScope.LocalUdpSocket);
-            var summary = _ru
-                ? $"Строк: {visible.Length} · внешние TCP*: {external} · loopback: {loopback} · LAN: {privateCount} · UDP-сокеты: {udp}"
-                : $"Rows: {visible.Length} · external TCP*: {external} · loopback: {loopback} · LAN: {privateCount} · UDP sockets: {udp}";
-            if (!snapshot.Complete)
-                summary += (_ru ? " · частичный снимок: " : " · partial snapshot: ") +
-                           string.Join("; ", snapshot.Issues);
-            if (snapshot.Truncated)
-                summary += _ru ? " · список ограничен 2000 строками" : " · limited to 2000 rows";
-            ResultText.Text = summary;
         }
         catch (Exception)
         {
@@ -74,6 +69,47 @@ public partial class IntelligenceWindow : Window
             _refreshing = false;
             RefreshButton.IsEnabled = true;
         }
+    }
+
+    private void ScopeFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (IsLoaded) ApplyFilter();
+    }
+
+    private void SearchText_Changed(object sender, TextChangedEventArgs e)
+    {
+        if (IsLoaded) ApplyFilter();
+    }
+
+    private void ApplyFilter()
+    {
+        if (_lastSnapshot is null || ScopeFilterComboBox is null || SearchTextBox is null)
+            return;
+
+        var tag = (ScopeFilterComboBox.SelectedItem as ComboBoxItem)?.Tag as string;
+        if (!Enum.TryParse<InsightViewFilter>(tag, out var filter))
+            filter = InsightViewFilter.All;
+        var filtered = _lastSnapshot.Connections
+            .Where(row => NetworkInsightFiltering.Matches(row, filter, SearchTextBox.Text))
+            .Select(row => new InsightRow(row, _ru)).ToArray();
+        ObservationsGrid.ItemsSource = filtered;
+
+        var source = _lastSnapshot.Connections;
+        var external = source.Count(row => row.Scope == ObservationScope.ExternalCandidate);
+        var loopback = source.Count(row => row.Scope == ObservationScope.Loopback);
+        var lan = source.Count(row => row.Scope == ObservationScope.PrivateOrLan);
+        var udp = source.Count(row => row.Scope == ObservationScope.LocalUdpSocket);
+        var listeners = source.Count(row => row.Scope == ObservationScope.Listener);
+        var timestamp = _lastSnapshot.CapturedAt.ToLocalTime().ToString("HH:mm:ss");
+        var summary = _ru
+            ? $"Показано {filtered.Length} из {source.Count} · внешний TCP*: {external} · Loopback: {loopback} · LAN TCP: {lan} · слушающие: {listeners} · UDP: {udp} · снимок {timestamp}"
+            : $"Showing {filtered.Length} of {source.Count} · external TCP*: {external} · loopback: {loopback} · LAN TCP: {lan} · listeners: {listeners} · UDP: {udp} · snapshot {timestamp}";
+        if (!_lastSnapshot.Complete)
+            summary += (_ru ? " · неполный снимок: " : " · partial snapshot: ") +
+                string.Join("; ", _lastSnapshot.Issues);
+        if (_lastSnapshot.Truncated)
+            summary += _ru ? " · ограничено 2000 строками" : " · limited to 2000 rows";
+        ResultText.Text = summary;
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
