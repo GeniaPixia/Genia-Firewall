@@ -51,7 +51,9 @@ public sealed class NetworkInsightCollector
             if (!names.TryGetValue(row.Pid, out var identity))
             {
                 var path = TryGetImagePath(row.Pid);
-                identity = (string.IsNullOrEmpty(path) ? $"PID {row.Pid}" :
+                // Protected processes may deny image path access. A name-only
+                // fallback is useful but does not establish executable identity.
+                identity = (string.IsNullOrEmpty(path) ? TryGetProcessName(row.Pid) :
                     Path.GetFileName(path), path ?? string.Empty);
                 names[row.Pid] = identity;
             }
@@ -173,6 +175,24 @@ public sealed class NetworkInsightCollector
             }
         }
         return null;
+    }
+
+    private static string TryGetProcessName(int pid)
+    {
+        try
+        {
+            using var process = Process.GetProcessById(pid);
+            var name = process.ProcessName;
+            if (!string.IsNullOrWhiteSpace(name))
+                return name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+                    ? name : name + ".exe";
+        }
+        catch (ArgumentException) { } // process exited
+        catch (InvalidOperationException) { }
+        catch (System.ComponentModel.Win32Exception) { } // access denied
+        catch (System.Security.SecurityException) { }
+
+        return $"PID {pid}";
     }
 
     private static string? TryGetImagePath(int pid)

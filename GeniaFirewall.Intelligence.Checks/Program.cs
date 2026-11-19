@@ -46,3 +46,39 @@ if (OperatingSystem.IsWindows())
         throw new InvalidOperationException("Invalid or unbounded owner-table snapshot.");
     Console.WriteLine($"NATIVE_SNAPSHOT_READONLY=PASS rows={snapshot.Connections.Count} complete={snapshot.Complete} issues={snapshot.Issues.Count}");
 }
+
+var synthetic = new[]
+{
+    new NetworkObservation(100, "chrome.exe", @"C:\Browser\chrome.exe", "TCP",
+        "127.0.0.1:4242", "127.0.0.1:2080", "ESTABLISHED", ObservationScope.Loopback),
+    new NetworkObservation(200, "sing-box.exe", @"C:\GeniaProxy\sing-box.exe", "TCP",
+        "127.0.0.1:2080", "—", "LISTEN", ObservationScope.Listener),
+    new NetworkObservation(300, "example.exe", "", "UDP6",
+        "[::]:1900", "—", "SOCKET", ObservationScope.LocalUdpSocket),
+    new NetworkObservation(400, "other.exe", "", "TCP",
+        "192.168.1.11:2000", "8.8.8.8:443", "ESTABLISHED", ObservationScope.ExternalCandidate),
+    new NetworkObservation(500, "lan.exe", "", "TCP",
+        "192.168.1.11:2000", "192.168.1.2:445", "ESTABLISHED", ObservationScope.PrivateOrLan)
+};
+var filterCases = new (InsightViewFilter Filter, string? Query, int Expected)[]
+{
+    (InsightViewFilter.All, null, 5),
+    (InsightViewFilter.ExternalTcp, "", 1),
+    (InsightViewFilter.Loopback, null, 1),
+    (InsightViewFilter.LanTcp, null, 1),
+    (InsightViewFilter.Listeners, null, 1),
+    (InsightViewFilter.UdpSockets, null, 1),
+    (InsightViewFilter.Unknown, null, 0),
+    (InsightViewFilter.All, "chrome", 1),
+    (InsightViewFilter.All, "2080", 2),
+    (InsightViewFilter.All, "300", 1),
+    (InsightViewFilter.All, " 8.8.8.8 ", 1),
+    (InsightViewFilter.Loopback, "sing-box", 0),
+};
+foreach (var (filter, query, wanted) in filterCases)
+{
+    var actual = synthetic.Count(row => NetworkInsightFiltering.Matches(row, filter, query));
+    if (actual != wanted)
+        throw new InvalidOperationException($"INSIGHT_FILTER_FAIL {filter}/{query}: {actual} != {wanted}");
+}
+Console.WriteLine($"GENIAFIREWALL_INSIGHT_FILTER_TESTS=PASS_{filterCases.Length}");
