@@ -183,16 +183,16 @@ public sealed class NetworkInsightCollector
         {
             using var process = Process.GetProcessById(pid);
             var name = process.ProcessName;
-            if (!string.IsNullOrWhiteSpace(name))
-                return name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
-                    ? name : name + ".exe";
+            // ProcessName is not a verified EXE path or filename.
+            // Do not manufacture an ".exe" suffix (PID 4 is "System").
+            return ProcessIdentityLabel.NameOnlyOrPid(pid, name);
         }
         catch (ArgumentException) { } // process exited
         catch (InvalidOperationException) { }
         catch (System.ComponentModel.Win32Exception) { } // access denied
         catch (System.Security.SecurityException) { }
 
-        return $"PID {pid}";
+        return ProcessIdentityLabel.NameOnlyOrPid(pid, null);
     }
 
     private static string? TryGetImagePath(int pid)

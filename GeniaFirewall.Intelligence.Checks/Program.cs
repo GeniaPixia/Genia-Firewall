@@ -82,3 +82,21 @@ foreach (var (filter, query, wanted) in filterCases)
         throw new InvalidOperationException($"INSIGHT_FILTER_FAIL {filter}/{query}: {actual} != {wanted}");
 }
 Console.WriteLine($"GENIAFIREWALL_INSIGHT_FILTER_TESTS=PASS_{filterCases.Length}");
+
+// A name-only lookup must never manufacture an executable suffix.
+var identityCases = new (int Pid, string? Name, string Expected)[]
+{
+    (4, "System", "System"),
+    (123, "chrome", "chrome"),
+    (456, "existing.exe", "existing.exe"),
+    (789, "", "PID 789"),
+    (790, null, "PID 790"),
+    (791, "  svchost  ", "svchost")
+};
+foreach (var (pid, name, expected) in identityCases)
+{
+    var actual = ProcessIdentityLabel.NameOnlyOrPid(pid, name);
+    if (actual != expected)
+        throw new InvalidOperationException($"NAME_ONLY_IDENTITY_FAIL {pid}: {actual} != {expected}");
+}
+Console.WriteLine($"GENIAFIREWALL_NAME_ONLY_IDENTITY_TESTS=PASS_{identityCases.Length}");
