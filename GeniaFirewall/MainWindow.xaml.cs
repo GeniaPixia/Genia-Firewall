@@ -383,6 +383,15 @@ public partial class MainWindow : Window
 
     private void SettingsButton_Click(object sender, RoutedEventArgs e) => OpenSettings();
 
+    private void IntelligenceButton_Click(object sender, RoutedEventArgs e)
+    {
+        // The Intelligence collector is created only after this user interaction.
+        // No background monitoring, rules, logs or network queries are added.
+        var window = new GeniaFirewall.Intelligence.Desktop.IntelligenceWindow(
+            LocalizationService.EffectiveLanguage == UiLanguage.Russian) { Owner = this };
+        window.ShowDialog();
+    }
+
     private async void OpenSettings()
     {
         var previousBackendMode = _settings.BackendMode;

@@ -11,6 +11,8 @@
     <sys:String xmlns:sys="clr-namespace:System;assembly=System.Runtime" x:Key="Main.Clear">Очистить</sys:String>
     <sys:String xmlns:sys="clr-namespace:System;assembly=System.Runtime" x:Key="Main.Add">+ Добавить</sys:String>
     <sys:String xmlns:sys="clr-namespace:System;assembly=System.Runtime" x:Key="Main.Settings">Настройки</sys:String>
+    <sys:String xmlns:sys="clr-namespace:System;assembly=System.Runtime" x:Key="Main.Intelligence">Анализ сети</sys:String>
+    <sys:String xmlns:sys="clr-namespace:System;assembly=System.Runtime" x:Key="Main.IntelligenceHint">Разовый обзор сетевой активности (только чтение)</sys:String>
     <sys:String xmlns:sys="clr-namespace:System;assembly=System.Runtime" x:Key="Main.ProtectionOn">Защита ВКЛ</sys:String>
     <sys:String xmlns:sys="clr-namespace:System;assembly=System.Runtime" x:Key="Main.ProtectionOff">Защита ВЫКЛ</sys:String>
     <sys:String xmlns:sys="clr-namespace:System;assembly=System.Runtime" x:Key="Main.SortTooltip">Нажмите для сортировки</sys:String>

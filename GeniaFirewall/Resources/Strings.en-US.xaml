@@ -11,6 +11,8 @@
     <sys:String xmlns:sys="clr-namespace:System;assembly=System.Runtime" x:Key="Main.Clear">Clear</sys:String>
     <sys:String xmlns:sys="clr-namespace:System;assembly=System.Runtime" x:Key="Main.Add">+ Add</sys:String>
     <sys:String xmlns:sys="clr-namespace:System;assembly=System.Runtime" x:Key="Main.Settings">Settings</sys:String>
+    <sys:String xmlns:sys="clr-namespace:System;assembly=System.Runtime" x:Key="Main.Intelligence">Network insights</sys:String>
+    <sys:String xmlns:sys="clr-namespace:System;assembly=System.Runtime" x:Key="Main.IntelligenceHint">On-demand network observations (read-only)</sys:String>
     <sys:String xmlns:sys="clr-namespace:System;assembly=System.Runtime" x:Key="Main.ProtectionOn">Protection ON</sys:String>
     <sys:String xmlns:sys="clr-namespace:System;assembly=System.Runtime" x:Key="Main.ProtectionOff">Protection OFF</sys:String>
     <sys:String xmlns:sys="clr-namespace:System;assembly=System.Runtime" x:Key="Main.SortTooltip">Click to sort</sys:String>
