@@ -1,9 +1,7 @@
 using System.Windows;
 using GeniaFirewall.Intelligence;
-using GeniaFirewall.Models;
-using GeniaFirewall.Services;
 
-namespace GeniaFirewall;
+namespace GeniaFirewall.Intelligence.Desktop;
 
 /// <summary>
 /// Opt-in, single-snapshot view: no timer, no hooks, no policy mutations or persistence.
@@ -11,11 +9,12 @@ namespace GeniaFirewall;
 public partial class IntelligenceWindow : Window
 {
     private readonly NetworkInsightCollector _collector = new();
-    private readonly bool _ru = LocalizationService.EffectiveLanguage == UiLanguage.Russian;
+    private readonly bool _ru;
     private bool _refreshing;
 
-    public IntelligenceWindow()
+    public IntelligenceWindow(bool russian)
     {
+        _ru = russian;
         InitializeComponent();
         if (!_ru)
         {

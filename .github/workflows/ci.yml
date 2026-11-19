@@ -29,3 +29,31 @@ jobs:
 
       - name: Intelligence scope regression tests (no firewall writes)
         run: dotnet run --project GeniaFirewall.Intelligence.Checks/GeniaFirewall.Intelligence.Checks.csproj --configuration Release --no-build
+
+      - name: Publish independent read-only Intelligence GUI test
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $out = 'publish/intelligence-qa'
+          $archive = 'publish/GeniaFirewall-Intelligence-0.8.0-READONLY-TEST-win-x64.zip'
+          $sha = 'publish/GeniaFirewall-Intelligence-0.8.0-READONLY-TEST-SHA256.txt'
+          dotnet publish GeniaFirewall.Intelligence.Smoke/GeniaFirewall.Intelligence.Smoke.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishTrimmed=false -p:DebugType=None -p:DebugSymbols=false --output $out
+          if ($LASTEXITCODE -ne 0) { throw 'Read-only test GUI publish failed' }
+          $items = @(Get-ChildItem -LiteralPath $out -File -Force)
+          if ($items.Count -ne 1 -or $items[0].Name -ne 'GeniaFirewall.Intelligence.Smoke.exe') {
+            throw ('Expected exactly one test EXE, got: ' + (($items | ForEach-Object Name) -join ', '))
+          }
+          Compress-Archive -LiteralPath (Join-Path $out 'GeniaFirewall.Intelligence.Smoke.exe') -DestinationPath $archive -Force
+          $digest = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -LiteralPath $sha -Value ($digest + '  ' + [IO.Path]::GetFileName($archive)) -Encoding ASCII
+          Write-Output 'INTELLIGENCE_READONLY_SINGLE_EXE_QA=PASS'
+
+      - name: Upload standalone Windows read-only test
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: GeniaFirewall-Intelligence-0.8.0-READONLY-TEST-win-x64
+          path: |
+            publish/GeniaFirewall-Intelligence-0.8.0-READONLY-TEST-win-x64.zip
+            publish/GeniaFirewall-Intelligence-0.8.0-READONLY-TEST-SHA256.txt
+          if-no-files-found: error
+          retention-days: 14

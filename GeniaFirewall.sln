@@ -12,6 +12,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeniaFirewall.Intelligence"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeniaFirewall.Intelligence.Checks", "GeniaFirewall.Intelligence.Checks\GeniaFirewall.Intelligence.Checks.csproj", "{65BC9E75-2D7F-4BC3-820E-8AF1DB202110}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeniaFirewall.Intelligence.Desktop", "GeniaFirewall.Intelligence.Desktop\GeniaFirewall.Intelligence.Desktop.csproj", "{D9C442F1-9A15-42BB-9315-7E4A9E93A506}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeniaFirewall.Intelligence.Smoke", "GeniaFirewall.Intelligence.Smoke\GeniaFirewall.Intelligence.Smoke.csproj", "{568D1F4A-D30B-4BA8-BC90-F97A5D25F7E2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,6 +42,14 @@ Global
 		{65BC9E75-2D7F-4BC3-820E-8AF1DB202110}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{65BC9E75-2D7F-4BC3-820E-8AF1DB202110}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{65BC9E75-2D7F-4BC3-820E-8AF1DB202110}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D9C442F1-9A15-42BB-9315-7E4A9E93A506}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D9C442F1-9A15-42BB-9315-7E4A9E93A506}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D9C442F1-9A15-42BB-9315-7E4A9E93A506}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D9C442F1-9A15-42BB-9315-7E4A9E93A506}.Release|Any CPU.Build.0 = Release|Any CPU
+		{568D1F4A-D30B-4BA8-BC90-F97A5D25F7E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{568D1F4A-D30B-4BA8-BC90-F97A5D25F7E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{568D1F4A-D30B-4BA8-BC90-F97A5D25F7E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{568D1F4A-D30B-4BA8-BC90-F97A5D25F7E2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

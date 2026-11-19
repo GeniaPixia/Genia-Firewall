@@ -27,7 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GeniaFirewall.Protocol\GeniaFirewall.Protocol.csproj" />
-    <ProjectReference Include="..\GeniaFirewall.Intelligence\GeniaFirewall.Intelligence.csproj" />
+    <ProjectReference Include="..\GeniaFirewall.Intelligence.Desktop\GeniaFirewall.Intelligence.Desktop.csproj" />
   </ItemGroup>
 
 

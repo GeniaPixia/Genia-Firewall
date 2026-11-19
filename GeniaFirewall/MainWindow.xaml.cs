@@ -387,7 +387,8 @@ public partial class MainWindow : Window
     {
         // The Intelligence collector is created only after this user interaction.
         // No background monitoring, rules, logs or network queries are added.
-        var window = new IntelligenceWindow { Owner = this };
+        var window = new GeniaFirewall.Intelligence.Desktop.IntelligenceWindow(
+            LocalizationService.EffectiveLanguage == UiLanguage.Russian) { Owner = this };
         window.ShowDialog();
     }
 
