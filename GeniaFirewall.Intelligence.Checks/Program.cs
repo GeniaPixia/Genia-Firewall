@@ -100,3 +100,38 @@ foreach (var (pid, name, expected) in identityCases)
         throw new InvalidOperationException($"NAME_ONLY_IDENTITY_FAIL {pid}: {actual} != {expected}");
 }
 Console.WriteLine($"GENIAFIREWALL_NAME_ONLY_IDENTITY_TESTS=PASS_{identityCases.Length}");
+
+// Same-snapshot loopback peer correlation: Chrome <-> local proxy.
+var chrome = new NetworkObservation(101, "chrome.exe", "", "TCP",
+    "127.0.0.1:40123", "127.0.0.1:2080", "ESTABLISHED", ObservationScope.Loopback);
+var proxy = new NetworkObservation(202, "sing-box.exe", "", "TCP",
+    "127.0.0.1:2080", "127.0.0.1:40123", "ESTABLISHED", ObservationScope.Loopback);
+var mismatched = new NetworkObservation(303, "unrelated.exe", "", "TCP",
+    "127.0.0.1:2080", "127.0.0.1:50123", "ESTABLISHED", ObservationScope.Loopback);
+var listener = new NetworkObservation(202, "sing-box.exe", "", "TCP",
+    "127.0.0.1:2080", "—", "LISTEN", ObservationScope.Listener);
+var udpSocket = new NetworkObservation(404, "dns.exe", "", "UDP",
+    "127.0.0.1:40123", "127.0.0.1:2080", "SOCKET", ObservationScope.LocalUdpSocket);
+var pairs = LoopbackPeerCorrelation.FindPeers([chrome, proxy, mismatched, listener, udpSocket]);
+if (pairs.Count != 2 || pairs[chrome] != proxy || pairs[proxy] != chrome)
+    throw new InvalidOperationException("LOOPBACK_CORRELATION_FAIL: reverse pair missing");
+if (pairs.ContainsKey(mismatched) || pairs.ContainsKey(listener) || pairs.ContainsKey(udpSocket))
+    throw new InvalidOperationException("LOOPBACK_CORRELATION_FAIL: false match");
+
+// Ambiguous reverse endpoint rows must not be assigned arbitrarily.
+var duplicateProxy = proxy with { Pid = 203, ProcessName = "other-proxy.exe" };
+var ambiguous = LoopbackPeerCorrelation.FindPeers([chrome, proxy, duplicateProxy]);
+if (ambiguous.Count != 0)
+    throw new InvalidOperationException("LOOPBACK_CORRELATION_FAIL: ambiguous endpoints");
+
+// No pairing of two rows owned by the same process, even if endpoints reverse.
+var selfPeer = proxy with { Pid = chrome.Pid, ProcessName = chrome.ProcessName };
+if (LoopbackPeerCorrelation.FindPeers([chrome, selfPeer]).Count != 0)
+    throw new InvalidOperationException("LOOPBACK_CORRELATION_FAIL: self process");
+
+// A lookup by peer name may show the Chrome row, but only after scope filtering.
+if (!NetworkInsightFiltering.Matches(chrome, InsightViewFilter.Loopback, "sing-box", proxy.ProcessName)
+    || NetworkInsightFiltering.Matches(chrome, InsightViewFilter.UdpSockets, "sing-box", proxy.ProcessName))
+    throw new InvalidOperationException("LOOPBACK_CORRELATION_FAIL: peer name filter");
+
+Console.WriteLine("GENIAFIREWALL_LOOPBACK_CORRELATION_TESTS=PASS");

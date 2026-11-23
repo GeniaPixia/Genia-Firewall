@@ -14,7 +14,8 @@ public enum InsightViewFilter
 
 public static class NetworkInsightFiltering
 {
-    public static bool Matches(NetworkObservation row, InsightViewFilter filter, string? query)
+    public static bool Matches(NetworkObservation row, InsightViewFilter filter, string? query,
+        string? pairedProcessName = null)
     {
         ArgumentNullException.ThrowIfNull(row);
         var matchesScope = filter switch
@@ -35,6 +36,7 @@ public static class NetworkInsightFiltering
             || row.ExecutablePath.Contains(v, StringComparison.OrdinalIgnoreCase)
             || row.Protocol.Contains(v, StringComparison.OrdinalIgnoreCase)
             || row.LocalEndpoint.Contains(v, StringComparison.OrdinalIgnoreCase)
-            || row.RemoteEndpoint.Contains(v, StringComparison.OrdinalIgnoreCase);
+            || row.RemoteEndpoint.Contains(v, StringComparison.OrdinalIgnoreCase)
+            || pairedProcessName?.Contains(v, StringComparison.OrdinalIgnoreCase) == true;
     }
 }
