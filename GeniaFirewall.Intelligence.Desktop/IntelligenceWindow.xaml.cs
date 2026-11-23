@@ -13,6 +13,8 @@ public partial class IntelligenceWindow : Window
     private readonly bool _ru;
     private bool _refreshing;
     private NetworkInsightSnapshot? _lastSnapshot;
+    private IReadOnlyDictionary<NetworkObservation, NetworkObservation> _peerPairs =
+        new Dictionary<NetworkObservation, NetworkObservation>();
 
     public IntelligenceWindow(bool russian)
     {
@@ -40,7 +42,8 @@ public partial class IntelligenceWindow : Window
             columns[3].Header = "Scope";
             columns[4].Header = "Local endpoint";
             columns[5].Header = "Remote endpoint";
-            columns[6].Header = "State";
+            columns[6].Header = "Possible peer";
+            columns[7].Header = "State";
         }
     }
 
@@ -55,6 +58,7 @@ public partial class IntelligenceWindow : Window
             var snapshot = await Task.Run(_collector.Collect);
             if (!IsLoaded) return;
             _lastSnapshot = snapshot;
+            _peerPairs = LoopbackPeerCorrelation.FindPeers(snapshot.Connections);
             ApplyFilter();
 
         }
@@ -90,8 +94,11 @@ public partial class IntelligenceWindow : Window
         if (!Enum.TryParse<InsightViewFilter>(tag, out var filter))
             filter = InsightViewFilter.All;
         var filtered = _lastSnapshot.Connections
-            .Where(row => NetworkInsightFiltering.Matches(row, filter, SearchTextBox.Text))
-            .Select(row => new InsightRow(row, _ru)).ToArray();
+            .Where(row => NetworkInsightFiltering.Matches(
+                row, filter, SearchTextBox.Text,
+                _peerPairs.TryGetValue(row, out var peer) ? peer.ProcessName : null))
+            .Select(row => new InsightRow(row, _ru,
+                _peerPairs.TryGetValue(row, out var peer) ? peer : null)).ToArray();
         ObservationsGrid.ItemsSource = filtered;
 
         var source = _lastSnapshot.Connections;
@@ -101,9 +108,10 @@ public partial class IntelligenceWindow : Window
         var udp = source.Count(row => row.Scope == ObservationScope.LocalUdpSocket);
         var listeners = source.Count(row => row.Scope == ObservationScope.Listener);
         var timestamp = _lastSnapshot.CapturedAt.ToLocalTime().ToString("HH:mm:ss");
+        var candidatePairs = _peerPairs.Count / 2;
         var summary = _ru
-            ? $"Показано {filtered.Length} из {source.Count} · внешний TCP*: {external} · Loopback: {loopback} · LAN TCP: {lan} · слушающие: {listeners} · UDP: {udp} · снимок {timestamp}"
-            : $"Showing {filtered.Length} of {source.Count} · external TCP*: {external} · loopback: {loopback} · LAN TCP: {lan} · listeners: {listeners} · UDP: {udp} · snapshot {timestamp}";
+            ? $"Показано {filtered.Length} из {source.Count} · внешний TCP*: {external} · Loopback: {loopback} · LAN TCP: {lan} · слушающие: {listeners} · UDP: {udp} · пар localhost*: {candidatePairs} · снимок {timestamp}"
+            : $"Showing {filtered.Length} of {source.Count} · external TCP*: {external} · loopback: {loopback} · LAN TCP: {lan} · listeners: {listeners} · UDP: {udp} · local pairs*: {candidatePairs} · snapshot {timestamp}";
         if (!_lastSnapshot.Complete)
             summary += (_ru ? " · неполный снимок: " : " · partial snapshot: ") +
                 string.Join("; ", _lastSnapshot.Issues);
@@ -124,8 +132,10 @@ public partial class IntelligenceWindow : Window
         public string RemoteEndpoint { get; }
         public string State { get; }
         public string ScopeDisplay { get; }
+        public string PeerDisplay { get; }
+        public string PeerTooltip { get; }
 
-        public InsightRow(NetworkObservation source, bool ru)
+        public InsightRow(NetworkObservation source, bool ru, NetworkObservation? peer)
         {
             Pid = source.Pid;
             ProcessName = source.ProcessName;
@@ -134,6 +144,12 @@ public partial class IntelligenceWindow : Window
             LocalEndpoint = source.LocalEndpoint;
             RemoteEndpoint = source.RemoteEndpoint;
             State = source.State;
+            PeerDisplay = peer is null ? "—" : $"{peer.ProcessName} (PID {peer.Pid})";
+            PeerTooltip = peer is null
+                ? (ru ? "Однозначная обратная TCP-пара в снимке не найдена" : "No unambiguous reverse TCP row")
+                : (ru
+                    ? $"Возможная парная запись в том же снимке, не подтверждение маршрута: {peer.ProcessName}, PID {peer.Pid}"
+                    : $"Possible reverse socket in the same snapshot, not proof of routing: {peer.ProcessName}, PID {peer.Pid}");
             ScopeDisplay = ru ? source.Scope switch
             {
                 ObservationScope.ExternalCandidate => "Внешний TCP*",
