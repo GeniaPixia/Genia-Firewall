@@ -30,6 +30,18 @@ jobs:
       - name: Intelligence scope regression tests (no firewall writes)
         run: dotnet run --project GeniaFirewall.Intelligence.Checks/GeniaFirewall.Intelligence.Checks.csproj --configuration Release --no-build
 
+      - name: Validate read-only firewall-rule comparison script syntax
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          $scriptPath = Join-Path (Get-Location) 'tools/Test-IntelligenceFirewallRules-READONLY.ps1'
+          [System.Management.Automation.Language.Parser]::ParseFile($scriptPath, [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) {
+            throw ("PowerShell parser errors: " + (($errors | ForEach-Object Message) -join '; '))
+          }
+          Write-Output 'INTELLIGENCE_FIREWALL_READONLY_QA_SCRIPT_PARSE=PASS'
+
       - name: Publish independent read-only Intelligence GUI test
         shell: pwsh
         run: |
