@@ -42,6 +42,15 @@ jobs:
           }
           Write-Output 'INTELLIGENCE_FIREWALL_READONLY_QA_SCRIPT_PARSE=PASS'
 
+      - name: Native WFP export audit self-tests and live read
+        shell: pwsh
+        run: |
+          $script = Join-Path (Get-Location) 'tools/Test-IntelligenceNativeWfp-READONLY.ps1'
+          pwsh -NoProfile -File $script -SelfTest
+          if ($LASTEXITCODE -ne 0) { throw 'Native WFP audit self-test failed' }
+          pwsh -NoProfile -File $script -SnapshotOnly
+          if ($LASTEXITCODE -ne 0) { throw 'Native WFP live export failed' }
+
       - name: Publish independent read-only Intelligence GUI test
         shell: pwsh
         run: |
