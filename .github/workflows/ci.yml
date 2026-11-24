@@ -26,3 +26,55 @@ jobs:
 
       - name: Build
         run: dotnet build GeniaFirewall.sln --configuration Release --no-restore -p:ContinuousIntegrationBuild=true
+
+      - name: Intelligence scope regression tests (no firewall writes)
+        run: dotnet run --project GeniaFirewall.Intelligence.Checks/GeniaFirewall.Intelligence.Checks.csproj --configuration Release --no-build
+
+      - name: Validate read-only firewall-rule comparison script syntax
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          $scriptPath = Join-Path (Get-Location) 'tools/Test-IntelligenceFirewallRules-READONLY.ps1'
+          [System.Management.Automation.Language.Parser]::ParseFile($scriptPath, [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) {
+            throw ("PowerShell parser errors: " + (($errors | ForEach-Object Message) -join '; '))
+          }
+          Write-Output 'INTELLIGENCE_FIREWALL_READONLY_QA_SCRIPT_PARSE=PASS'
+
+      - name: Native WFP export audit self-tests and live read
+        shell: pwsh
+        run: |
+          $script = Join-Path (Get-Location) 'tools/Test-IntelligenceNativeWfp-READONLY.ps1'
+          pwsh -NoProfile -File $script -SelfTest
+          if ($LASTEXITCODE -ne 0) { throw 'Native WFP audit self-test failed' }
+          pwsh -NoProfile -File $script -SnapshotOnly
+          if ($LASTEXITCODE -ne 0) { throw 'Native WFP live export failed' }
+
+      - name: Publish independent read-only Intelligence GUI test
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $out = 'publish/intelligence-qa'
+          $archive = 'publish/GeniaFirewall-Intelligence-0.8.0-READONLY-TEST-win-x64.zip'
+          $sha = 'publish/GeniaFirewall-Intelligence-0.8.0-READONLY-TEST-SHA256.txt'
+          dotnet publish GeniaFirewall.Intelligence.Smoke/GeniaFirewall.Intelligence.Smoke.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishTrimmed=false -p:DebugType=None -p:DebugSymbols=false --output $out
+          if ($LASTEXITCODE -ne 0) { throw 'Read-only test GUI publish failed' }
+          $items = @(Get-ChildItem -LiteralPath $out -File -Force)
+          if ($items.Count -ne 1 -or $items[0].Name -ne 'GeniaFirewall.Intelligence.Smoke.exe') {
+            throw ('Expected exactly one test EXE, got: ' + (($items | ForEach-Object Name) -join ', '))
+          }
+          Compress-Archive -LiteralPath (Join-Path $out 'GeniaFirewall.Intelligence.Smoke.exe') -DestinationPath $archive -Force
+          $digest = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -LiteralPath $sha -Value ($digest + '  ' + [IO.Path]::GetFileName($archive)) -Encoding ASCII
+          Write-Output 'INTELLIGENCE_READONLY_SINGLE_EXE_QA=PASS'
+
+      - name: Upload standalone Windows read-only test
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: GeniaFirewall-Intelligence-0.8.0-READONLY-TEST-win-x64
+          path: |
+            publish/GeniaFirewall-Intelligence-0.8.0-READONLY-TEST-win-x64.zip
+            publish/GeniaFirewall-Intelligence-0.8.0-READONLY-TEST-SHA256.txt
+          if-no-files-found: error
+          retention-days: 14
